@@ -2,18 +2,25 @@
 import os
 import codecs
 import pickle
+import re
 import itertools
 from collections import OrderedDict
 
 import tensorflow as tf
 import numpy as np
-from model import Model
-from loader import load_sentences, update_tag_scheme
-from loader import char_mapping, tag_mapping
-from loader import augment_with_pretrained, prepare_dataset
-from utils import get_logger, make_path, clean, create_model, save_model
-from utils import print_config, save_config, load_config, test_ner
-from data_utils import load_word2vec, create_input, input_from_line, BatchManager
+from ChineseNER.model import Model
+from ChineseNER.loader import load_sentences, update_tag_scheme
+from ChineseNER.loader import char_mapping, tag_mapping
+from ChineseNER.loader import augment_with_pretrained, prepare_dataset
+from ChineseNER.utils import get_logger, make_path, clean, create_model, save_model
+from ChineseNER.utils import print_config, save_config, load_config, test_ner
+from ChineseNER.data_utils import load_word2vec, create_input, input_from_line, BatchManager
+
+chineseNER_path = os.path.dirname(os.path.abspath(__file__))
+
+####
+# MEETING标签太少，分数据集后train里没有
+#####
 
 flags = tf.app.flags
 flags.DEFINE_boolean("clean",       False,      "clean train folder")
@@ -36,18 +43,18 @@ flags.DEFINE_boolean("lower",       True,       "Wither lower case")
 
 flags.DEFINE_integer("max_epoch",   100,        "maximum training epochs")
 flags.DEFINE_integer("steps_check", 100,        "steps per checkpoint")
-flags.DEFINE_string("ckpt_path",    "ckpt",      "Path to save model")
-flags.DEFINE_string("summary_path", "summary",      "Path to store summaries")
-flags.DEFINE_string("log_file",     "train.log",    "File for log")
-flags.DEFINE_string("map_file",     "maps.pkl",     "file for maps")
-flags.DEFINE_string("vocab_file",   "vocab.json",   "File for vocab")
-flags.DEFINE_string("config_file",  "config_file",  "File for config")
-flags.DEFINE_string("script",       "conlleval",    "evaluation script")
-flags.DEFINE_string("result_path",  "result",       "Path for results")
-flags.DEFINE_string("emb_file",     "wiki_100.utf8", "Path for pre_trained embedding")
-flags.DEFINE_string("train_file",   os.path.join("data", "example.train"),  "Path for train data")
-flags.DEFINE_string("dev_file",     os.path.join("data", "example.dev"),    "Path for dev data")
-flags.DEFINE_string("test_file",    os.path.join("data", "example.test"),   "Path for test data")
+flags.DEFINE_string("ckpt_path",    os.path.join(chineseNER_path,"output","ckpt"),     "Path to save model")
+flags.DEFINE_string("summary_path", os.path.join(chineseNER_path,"output","summary"),      "Path to store summaries")
+flags.DEFINE_string("log_file",     os.path.join(chineseNER_path,"output","log","train.log"),    "File for log")
+flags.DEFINE_string("map_file",     os.path.join(chineseNER_path,"output","maps.pkl"),     "file for maps")
+flags.DEFINE_string("vocab_file",   os.path.join(chineseNER_path,"output","vocab.json"),   "File for vocab")
+flags.DEFINE_string("config_file",  os.path.join(chineseNER_path,"output","config_file"),  "File for config")
+flags.DEFINE_string("script",       os.path.join(chineseNER_path,"output","conlleval"),    "evaluation script")
+flags.DEFINE_string("result_path",  os.path.join(chineseNER_path,"output","result"),       "Path for results")
+flags.DEFINE_string("emb_file",     os.path.join(chineseNER_path,"config","wiki_100.utf8"), "Path for pre_trained embedding")
+flags.DEFINE_string("train_file",   os.path.join(chineseNER_path,"data", "data_train","example.train"),  "Path for train data")
+flags.DEFINE_string("dev_file",     os.path.join(chineseNER_path,"data","data_train", "example.dev"),    "Path for dev data")
+flags.DEFINE_string("test_file",    os.path.join(chineseNER_path,"data","data_train", "example.test"),   "Path for test data")
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -189,6 +196,43 @@ def train():
 
 
 def evaluate_line():
+
+     config = load_config(FLAGS.config_file)
+     logger = get_logger(FLAGS.log_file)
+    # limit GPU memory
+
+     tf_config = tf.ConfigProto()
+     tf_config.gpu_options.allow_growth = True
+     with open(FLAGS.map_file, "rb") as f:
+        char_to_id, id_to_char, tag_to_id, id_to_tag = pickle.load(f)
+
+        with tf.Session(config=tf_config) as sess:
+            model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
+         # while True:
+            # try:
+            #     line = input("请输入测试句子:")
+            #     result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
+            #     print(result)
+            # except Exception as e:
+            #     logger.info(e)
+
+                # line = input("请输入测试句子:")
+
+            with open("./data/data_test/sentence.txt", 'r', encoding='UTF-8') as f:
+                line = f.read()
+                # print(line)
+                # sub_str = re.sub(u"([\{\}])", "", line)
+                # line=line.replace("}"," ")
+                result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
+                # print(type(result))
+                # result.pop("string")  # 删除json中的string,第一种方法,在结果中删除dict
+                print(result)
+
+            with open("./data/data_test/sentence_result.txt", 'w', encoding='UTF-8') as ff:
+                ff.write(str(result))
+
+
+def evaluate_text(text):
     config = load_config(FLAGS.config_file)
     logger = get_logger(FLAGS.log_file)
     # limit GPU memory
@@ -197,18 +241,11 @@ def evaluate_line():
     with open(FLAGS.map_file, "rb") as f:
         char_to_id, id_to_char, tag_to_id, id_to_tag = pickle.load(f)
     with tf.Session(config=tf_config) as sess:
+        # tf.reset_default_graph()
         model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
-        while True:
-            # try:
-            #     line = input("请输入测试句子:")
-            #     result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
-            #     print(result)
-            # except Exception as e:
-            #     logger.info(e)
-
-                line = input("请输入测试句子:")
-                result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
-                print(result)
+        # sub_str = re.sub(u"([\{\}])", "", text)
+        result = model.evaluate_line(sess, input_from_line(text, char_to_id), id_to_tag)
+    return  result
 
 
 def main(_):
@@ -218,7 +255,11 @@ def main(_):
             clean(FLAGS)
         train()
     else:
-        evaluate_line()
+        i = 1
+        while (i > 0):
+            tf.reset_default_graph()  ## 多次调用 model = create_model时 报错ValueError: 所以先更新graph
+            evaluate_line()
+            i = i - 1
 
 
 if __name__ == "__main__":

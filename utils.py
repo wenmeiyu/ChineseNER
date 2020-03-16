@@ -4,7 +4,7 @@ import shutil
 import logging
 
 import tensorflow as tf
-from conlleval import return_report
+from ChineseNER.conlleval import return_report
 
 models_path = "./models"
 eval_path = "./evaluation"
@@ -169,6 +169,7 @@ def save_model(sess, model, path, logger):
 
 def create_model(session, Model_class, path, load_vec, config, id_to_char, logger):
     # create model, reuse parameters if exists
+
     model = Model_class(config)
 
     ckpt = tf.train.get_checkpoint_state(path)
@@ -186,12 +187,13 @@ def create_model(session, Model_class, path, load_vec, config, id_to_char, logge
     return model
 
 
-def result_to_json(string, tags):
-    item = {"string": string, "entities": []}
+def result_to_json(string,tags):
+    item = {"entities": []}   # 删除json中的string,第二种方法,在result_to_json函数中不再拼接string字典
+    # item = {"string":string,"entities": []}
     entity_name = ""
     entity_start = 0
     idx = 0
-    for char, tag in zip(string, tags):
+    for char, tag in zip(string,tags):
         if tag[0] == "S":
             item["entities"].append({"word": char, "start": idx, "end": idx+1, "type":tag[2:]})
         elif tag[0] == "B":

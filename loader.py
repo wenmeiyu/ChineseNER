@@ -2,8 +2,9 @@ import os
 import re
 import codecs
 
-from data_utils import create_dico, create_mapping, zero_digits
-from data_utils import iob2, iob_iobes, get_seg_features
+from ChineseNER.data_utils import create_dico, create_mapping, zero_digits
+# from data_utils import iob2, iobes_iob, get_seg_features
+from ChineseNER.data_utils import iob2, iob_iobes, get_seg_features
 
 
 def load_sentences(path, lower, zeros):
@@ -15,9 +16,9 @@ def load_sentences(path, lower, zeros):
     sentence = []
     num = 0
     for line in codecs.open(path, 'r', 'utf8'):
-        num+=1
+        num += 1
         line = zero_digits(line.rstrip()) if zeros else line.rstrip()
-        # print(list(line))
+        print(line)
         if not line:
             if len(sentence) > 0:
                 if 'DOCSTART' not in sentence[0][0]:
@@ -25,11 +26,12 @@ def load_sentences(path, lower, zeros):
                 sentence = []
         else:
             if line[0] == " ":
-                line = "$" + line[1:]
+                line = "$" + '\t' + line[1:]
+                print(line)
                 word = line.split()
                 # word[0] = " "
             else:
-                word= line.split()
+                word = line.split()
             assert len(word) >= 2, print([word[0]])
             sentence.append(word)
     if len(sentence) > 0:
@@ -52,6 +54,8 @@ def update_tag_scheme(sentences, tag_scheme):
                             'Please check sentence %i:\n%s' % (i, s_str))
         if tag_scheme == 'iob':
             # If format was IOB1, we convert to IOB2
+            # new_tags = iobes_iob(tags)
+            # for word, new_tag in zip(s, new_tags):
             for word, new_tag in zip(s, tags):
                 word[-1] = new_tag
         elif tag_scheme == 'iobes':
@@ -85,6 +89,7 @@ def tag_mapping(sentences):
     dico = create_dico(tags)
     tag_to_id, id_to_tag = create_mapping(dico)
     print("Found %i unique named entity tags" % len(dico))
+    print("tag num:",dico)
     return dico, tag_to_id, id_to_tag
 
 
@@ -100,7 +105,9 @@ def prepare_dataset(sentences, char_to_id, tag_to_id, lower=False, train=True):
 
     def f(x):
         return x.lower() if lower else x
+
     data = []
+
     for s in sentences:
         string = [w[0] for w in s]
         chars = [char_to_id[f(w) if f(w) in char_to_id else '<UNK>']
@@ -108,6 +115,9 @@ def prepare_dataset(sentences, char_to_id, tag_to_id, lower=False, train=True):
         segs = get_seg_features("".join(string))
         if train:
             tags = [tag_to_id[w[-1]] for w in s]
+            # print("s:",s)
+            # print("tags:",tags)
+            # print("tag_to_id:", tag_to_id)
         else:
             tags = [none_index for _ in chars]
         data.append([string, chars, segs, tags])
@@ -168,4 +178,3 @@ def load_maps(save_path):
     pass
     # with codecs.open(save_path, "r", encoding="utf8") as f:
     #     pickle.load(save_path, f)
-

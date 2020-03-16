@@ -30,7 +30,8 @@ def _get_concat_variable(name, shape, dtype, num_shards):
     return sharded_variable[0]
 
   concat_name = name + "/concat"
-  concat_full_name = vs.get_variable_scope().name + "/" + concat_name + ":0"
+  concat_full_name = vs.get_variable_scope(reuse=True).name + "/" + concat_name + ":0"
+  # concat_full_name = vs.get_variable_scope().name + "/" + concat_name + ":0"
   for value in ops.get_collection(ops.GraphKeys.CONCATENATED_VARIABLES):
     if value.name == concat_full_name:
       return value

@@ -5,9 +5,9 @@ from tensorflow.contrib.crf import crf_log_likelihood
 from tensorflow.contrib.crf import viterbi_decode
 from tensorflow.contrib.layers.python.layers import initializers
 
-import rnncell as rnn
-from utils import result_to_json
-from data_utils import create_input, iobes_iob
+import ChineseNER.rnncell as rnn
+from ChineseNER.utils import result_to_json
+from ChineseNER.data_utils import create_input, iobes_iob
 
 
 class Model(object):
@@ -51,6 +51,7 @@ class Model(object):
         self.num_steps = tf.shape(self.char_inputs)[-1]
 
         # embeddings for chinese character and segmentation representation
+        # tf.reset_default_graph()
         embedding = self.embedding_layer(self.char_inputs, self.seg_inputs, config)
 
         # apply dropout before feed to lstm layer
@@ -64,7 +65,6 @@ class Model(object):
 
         # loss of the model
         self.loss = self.loss_layer(self.logits, self.lengths)
-
         with tf.variable_scope("optimizer"):
             optimizer = self.config["optimizer"]
             if optimizer == "sgd":
@@ -94,6 +94,8 @@ class Model(object):
         """
 
         embedding = []
+        # tf.reset_default_graph()
+
         with tf.variable_scope("char_embedding" if not name else name), tf.device('/cpu:0'):
             self.char_lookup = tf.get_variable(
                     name="char_embedding",
@@ -272,4 +274,5 @@ class Model(object):
         lengths, scores = self.run_step(sess, False, inputs)
         batch_paths = self.decode(scores, lengths, trans)
         tags = [id_to_tag[idx] for idx in batch_paths[0]]
-        return result_to_json(inputs[0][0], tags)
+        # print(tags)
+        return result_to_json(inputs[0][0],tags)

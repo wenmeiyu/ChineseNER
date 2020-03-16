@@ -259,6 +259,7 @@ def replace_html(s):
     s = s.replace("&rdquo;", "”")
     s = s.replace("&mdash;","")
     s = s.replace("\xa0", " ")
+    s = s.replace("}", " ")  # 特殊符号用空格替换
     return(s)
 
 
@@ -290,7 +291,7 @@ class BatchManager(object):
         sorted_data = sorted(data, key=lambda x: len(x[0]))
         batch_data = list()
         for i in range(num_batch):
-            batch_data.append(self.pad_data(sorted_data[i*batch_size : (i+1)*batch_size]))
+            batch_data.append(self.pad_data(sorted_data[int(i*batch_size) : int((i+1)*batch_size)]))
         return batch_data
 
     @staticmethod

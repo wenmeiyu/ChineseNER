@@ -1,0 +1,105 @@
+Evaluation Only. Created with Aspose.Words. Copyright 2003-2018 Aspose Pty Ltd.
+中核项目环境部署
+应用程序更新
+注：应用程序部署在100.1.9.48的服务器上，Redis,RabbitMq,Oracle数据库部署在100.1.9.47的服务器上。（服务器端口22，密码：CNNC@gyw001）
+应用程序更新
+后端更新（包名：acm-cloud.tgz）
+1. 将需要更新的程序包上传至48的服务器上（因中核涉密机制，后端包传输时会先解压再压缩传输，到前置机上是包的后缀为acm-cloud.rar，这需要先将rar包解压，将解压后的文件夹传输到48服务器上:/home/data/）
+2.在/home/data/acm-cloud/路径下压缩jar包执行命令：
+tar  czvf  acm-cloud.tgz *jar
+3.进入路径/home/tools/路径下：
+移除旧的程序包：
+离线环境安装部署
+安装jdk：
+将jdk安装包(jdk-8u121-linux-x64.tar.gz)传输到应用服务器上
+创建目录：
+mkdir /usr/wisdom
+解压jdk安装包：
+tar -xzvf jdk-8u121-linux-x64.tar.gz
+解压完成后，配置环境变量：
+<1> 编辑profile文件：vi /etc/profile
+<2> 在文件末尾添加：
+JAVA_HOME=/usr/wisdom/jdk1.8.0_121
+PATH=$JAVA_HOME/bin:$PATH
+CLASSPATH=.:$JAVA_HOME/lib/tools.jar
+export PATH JAVA_HOME CLASSPATH
+
+
+
+解决User can only log in via localhost
+找到这个文件rabbit.app
+vim /usr/lib/rabbitmq/lib/rabbitmq_server-3.6.5/ebin/rabbit.app
+将：{loopback_users, [<<”guest”>>]}，
+改为：{loopback_users, []}，
+原因：rabbitmq从3.3.0开始禁止使用guest/guest权限通过除localhost外的访问
+
+rabbitmq-server start &
+
+查看进程：
+ps -ef | grep rabbitmq
+
+杀进程：
+Kill 1258(具体数字看真实环境)
+
+启动服务:
+rabbitmq-server start &
+
+启用默认插件
+rabbitmq-plugins enable rabbitmq_management
+
+
+重启mq
+systemctl restart rabbitmq-server.service
+
+guest/guest
+ HYPERLINK "http://192.168.3.144:15672/" \l "/" http://192.168.3.144:15672/#/
+参考资料
+https://blog.csdn.net/weixin_34168880/article/details/88193395
+https://blog.csdn.net/shenhonglei1234/article/details/82745601
+
+前端部署:
+1.node.js 部署：
+	1）将node-v10.16.0-linux-x64.tar传到服务器上
+ 	2）配置环境变量：
+		vim  /etc/profile
+		在文件末尾添加：
+		# node
+		export NODE_HOME=/usr/wisdom/node-v10.16.0-linux-x64
+		export PATH=$NODE_HOME/bin:$PATH
+		添加保存后执行：
+		     source /etc/profile
+		     node -v
+前端部署:
+1.node.js 部署：
+	1）将node-v10.16.0-linux-x64.tar传到服务器上
+ 	2）配置环境变量：
+		vim  /etc/profile
+		在文件末尾添加：
+		# node
+		export NODE_HOME=/usr/wisdom/node-v10.16.0-linux-x64
+		export PATH=$NODE_HOME/bin:$PATH
+		添加保存后执行：
+		     source /etc/profile
+		     node -v
+2.前端项目打包：
+	    ssh root@47.92.71.117
+cd /data/wisdom/acm/nextjs
+tar -zcf acm_www.tgz acm_www
+acm_www.tgz发布到中核
+3.编译发布：
+ 	    tar -xvf acm_www.tgz
+cd acm_www
+npm run build
+npm run start
+
+后端部署：
+1.后端打包：
+ 	ssh  HYPERLINK "mailto:hadoop@192.168.3.11" hadoop@192.168.3.11
+	cd 3rd/
+	./publish-cldm_springcloud-zhonghe.sh
+	将生成的acm_cloud.tgz发到服务器上/usr/wisdom/目录下
+2.服务发布：
+   	将脚本文件publish-cldm_springcloud.sh放到/usr/wisdom/目录下
+	创建文件夹：mkdir data
+	执行脚本：./publish-cldm_springcloud.sh
+

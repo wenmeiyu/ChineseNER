@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/dell/wenmy/pyAlgorithm/ChineseNER/output/ckpt/ner.ckpt"
+all_model_checkpoint_paths: "/home/dell/wenmy/pyAlgorithm/ChineseNER/output/ckpt/ner.ckpt"

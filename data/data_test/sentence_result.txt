@@ -1,1 +1,1 @@
-{'entities': [{'start': 2407, 'word': '\n\x0c', 'type': 'TASK', 'end': 2409}]}
+{'entities': [{'word': '\n\x0c', 'start': 2407, 'end': 2409, 'type': 'TASK'}]}

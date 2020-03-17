@@ -227,6 +227,7 @@ def evaluate_line():
                 # print(type(result))
                 # result.pop("string")  # 删除json中的string,第一种方法,在结果中删除dict
                 print(result)
+                print(type(result))
 
             with open("./data/data_test/sentence_result.txt", 'w', encoding='UTF-8') as ff:
                 ff.write(str(result))
